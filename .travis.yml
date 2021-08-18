@@ -1,0 +1,20 @@
+sudo: false
+
+language: cpp
+
+services:
+  - docker
+
+env:
+  matrix:
+    - IMAGE="gcc:focal"
+    - IMAGE="gcc:bionic"
+
+before_install:
+  - ./docker/generateDockerfile.sh -t docker/Dockerfile.template -e image=$IMAGE >> Dockerfile
+
+install:
+  - docker build -t veides/veides-sdk-c .
+
+script:
+  - docker run --rm veides/veides-sdk-c bash --login /opt/veides-sdk-c/docker/check.sh

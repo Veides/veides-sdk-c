@@ -1,0 +1,14 @@
+FROM gorzechowski/{{image}}
+
+RUN apt-get -y update && apt-get -qy install \
+    libssl-dev \
+    git
+
+RUN groupadd veides && \
+    useradd -g veides -s /bin/bash veides
+
+COPY . /opt/veides-sdk-c
+
+RUN chown -R veides:veides /opt/veides-sdk-c
+
+USER veides
