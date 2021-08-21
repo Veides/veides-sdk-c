@@ -2,6 +2,7 @@ FROM gorzechowski/{{image}}
 
 RUN apt-get -y update && apt-get -qy install \
     libssl-dev \
+    libcurl4-openssl-dev \
     git
 
 RUN groupadd veides && \
