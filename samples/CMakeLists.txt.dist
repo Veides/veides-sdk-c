@@ -1,0 +1,14 @@
+cmake_minimum_required(VERSION 3.0.2)
+project(MyProject)
+
+find_package(VeidesApiClient)
+find_package(VeidesStreamHubClient)
+
+# [...]
+
+target_link_libraries(
+    ${PROJECT_NAME}
+
+    veides_api_client
+    veides_stream_hub_client
+)

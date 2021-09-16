@@ -32,15 +32,14 @@ static VEIDES_RC veides_add_handler(VeidesHandlers *handlers, VeidesHandler *han
     VEIDES_RC rc = VEIDES_RC_SUCCESS;
 
     VeidesHandler **tmp = NULL;
-    tmp = realloc(handlers->entries, sizeof(VeidesHandler *));
+
+    tmp = realloc(handlers->entries, sizeof(VeidesHandler*) * (handlers->count + 1));
     if (tmp == NULL) {
         return VEIDES_RC_NOMEM;
     }
 
     handlers->entries = tmp;
-
     handlers->entries[handlers->count] = handler;
-
     handlers->count++;
 
     return rc;
@@ -50,7 +49,8 @@ static VEIDES_RC veides_add_trailHandler(VeidesTrailHandlers *handlers, VeidesTr
     VEIDES_RC rc = VEIDES_RC_SUCCESS;
 
     VeidesTrailHandler **tmp = NULL;
-    tmp = realloc(handlers->entries, sizeof(VeidesTrailHandler *));
+
+    tmp = realloc(handlers->entries, sizeof(VeidesTrailHandler*) * (handlers->count + 1));
     if (tmp == NULL) {
         return VEIDES_RC_NOMEM;
     }

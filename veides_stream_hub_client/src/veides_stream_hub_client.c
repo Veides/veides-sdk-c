@@ -62,6 +62,10 @@ VEIDES_RC VeidesStreamHubClient_disconnect(VeidesStreamHubClient *client) {
     return rc;
 }
 
+VEIDES_RC VeidesStreamHubClient_isConnected(VeidesStreamHubClient *client) {
+    return veides_sh_client_isConnected((void *) client);
+}
+
 VEIDES_RC VeidesStreamHubClient_setTrailHandler(VeidesStreamHubClient *client, const char *agent, const char *name, VeidesTrailCallbackHandler callback) {
     VEIDES_RC rc = VEIDES_RC_SUCCESS;
 

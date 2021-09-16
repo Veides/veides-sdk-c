@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.5.0)
 project(veides_sdk C CXX)
 
 set(VERSION_MAJOR 0)
-set(VERSION_MINOR 1)
+set(VERSION_MINOR 2)
 set(VERSION_PATCH 0)
 
 set(VEIDES_SDK_VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
@@ -142,12 +142,18 @@ if (${VEIDES_WITH_STREAM_HUB_CLIENT})
     target_link_libraries(veides_stream_hub_client ${CMAKE_THREAD_LIBS_INIT})
 
     install(
-        TARGETS
+        TARGETS veides_stream_hub_client
 
-        veides_stream_hub_client
+        EXPORT VeidesStreamHubClientConfig
 
         ARCHIVE DESTINATION lib
         LIBRARY DESTINATION lib
+    )
+
+    install(
+        EXPORT VeidesStreamHubClientConfig
+
+        DESTINATION lib/cmake
     )
 
     install(
@@ -207,12 +213,18 @@ if (${VEIDES_WITH_API_CLIENT})
     )
 
     install(
-        TARGETS
+        TARGETS veides_api_client
 
-        veides_api_client
+        EXPORT VeidesApiClientConfig
 
         ARCHIVE DESTINATION lib
         LIBRARY DESTINATION lib
+    )
+
+    install(
+        EXPORT VeidesApiClientConfig
+
+        DESTINATION lib/cmake
     )
 
     install(
@@ -254,12 +266,12 @@ if(${VEIDES_BUILD_TESTS})
         tests
     )
 
-    add_executable(veidesStreamHubClientTests ${test_sources} ${sh_sources} ${api_sources} ${3rdparty} ${shared_sources} ${shared_headers})
-    add_dependencies(veidesStreamHubClientTests googletest)
-    add_test(veidesStreamHubClientTests veidesStreamHubClientTests)
+    add_executable(veidesSdkTests ${test_sources} ${sh_sources} ${api_sources} ${3rdparty} ${shared_sources} ${shared_headers})
+    add_dependencies(veidesSdkTests googletest)
+    add_test(veidesSdkTests veidesSdkTests)
 
     target_link_libraries(
-        veidesStreamHubClientTests
+        veidesSdkTests
 
         ${GTEST_LIBS_DIR}/libgtest${CMAKE_STATIC_LIBRARY_SUFFIX}
         ${GTEST_LIBS_DIR}/libgtest_main${CMAKE_STATIC_LIBRARY_SUFFIX}
@@ -267,19 +279,19 @@ if(${VEIDES_BUILD_TESTS})
 
     if(NOT ${VEIDES_BUILD_DEPENDENCIES})
         target_link_libraries(
-            veidesStreamHubClientTests
+            veidesSdkTests
 
             ${PAHO_SYSTEM_LIBRARY}
         )
     else()
         target_link_libraries(
-            veidesStreamHubClientTests
+            veidesSdkTests
 
             ${PAHO_LIBS_DIR}/libpaho-mqtt3as${CMAKE_SHARED_LIBRARY_SUFFIX}
         )
 
-        add_dependencies(veidesStreamHubClientTests paho)
+        add_dependencies(veidesSdkTests paho)
     endif()
 
-    target_link_libraries(veidesStreamHubClientTests ${CMAKE_THREAD_LIBS_INIT} ${CURL_LIBRARIES})
+    target_link_libraries(veidesSdkTests ${CMAKE_THREAD_LIBS_INIT} ${CURL_LIBRARIES})
 endif()

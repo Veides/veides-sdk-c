@@ -45,6 +45,13 @@ LIBRARY_API VEIDES_RC VeidesStreamHubClient_connect(VeidesStreamHubClient *clien
 LIBRARY_API VEIDES_RC VeidesStreamHubClient_disconnect(VeidesStreamHubClient *client);
 
 /**
+ * @brief Check Veides Stream Hub connection status
+ *
+ * @param client
+ */
+LIBRARY_API VEIDES_RC VeidesStreamHubClient_isConnected(VeidesStreamHubClient *client);
+
+/**
  * @brief Set a callback for the trail sent by particular agent
  *
  * @param client
