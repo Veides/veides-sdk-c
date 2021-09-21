@@ -16,7 +16,6 @@
 
 typedef struct VeidesApiClientInternal {
     VeidesApiClientProperties *properties;
-    void                      *curl;
     char                      *version;
 } VeidesApiClientInternal;
 

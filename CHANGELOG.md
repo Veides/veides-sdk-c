@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.1] - 2021-09-21
+
+### Fixed
+
+* Fix for libcurl API usage
+
 ## [0.2.0] - 2021-09-16
 
 ### Added

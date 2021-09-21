@@ -59,24 +59,9 @@ VEIDES_RC veides_api_client_create(void **veidesClient, VeidesApiClientPropertie
 
     VeidesApiClientInternal *client = (VeidesApiClientInternal *) malloc(sizeof(VeidesApiClientInternal));
     client->properties = properties;
-    client->curl = NULL;
     client->version = "v1";
 
-    CURL *curl;
-
     curl_global_init(CURL_GLOBAL_ALL);
-
-    curl = curl_easy_init();
-
-    if (!curl) {
-        return VEIDES_RC_FAILURE;
-    }
-
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
-    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L);
-    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 1L);
-
-    client->curl = curl;
 
     int size = strlen(VEIDES_USER_AGENT_HEADER_FORMAT) + strlen(VEIDES_SDK_VERSION);
     char userAgent[size];
@@ -103,13 +88,14 @@ VEIDES_RC veides_api_client_destroy(void *veidesClient) {
     VeidesApiClientInternal *client = (VeidesApiClientInternal *) veidesClient;
     int i = 0;
 
-    if (!client || (client && client->curl == NULL)) {
+    if (!client) {
         rc = VEIDES_RC_INVALID_HANDLE;
         VEIDES_LOG_ERROR("Invalid or NULL API client handle provided (rc=%d)", rc);
         return rc;
     }
     client->properties = NULL;
     veides_utils_freePtr((void *) client);
+    curl_global_cleanup();
     client = NULL;
 
     return rc;
@@ -143,7 +129,7 @@ VEIDES_RC veides_api_client_sendRequest(void *veidesClient, const char *uri, con
 
     VeidesApiClientInternal *client = (VeidesApiClientInternal *) veidesClient;
 
-    if (!client || (client && client->curl == NULL)) {
+    if (!client) {
         rc = VEIDES_RC_INVALID_HANDLE;
         VEIDES_LOG_ERROR("Invalid API client handle provided (rc=%d)", rc);
         return rc;
@@ -154,6 +140,18 @@ VEIDES_RC veides_api_client_sendRequest(void *veidesClient, const char *uri, con
         VEIDES_LOG_WARNING("Invalid responseCode, responsePayload or responsePayloadLen provided (rc=%d)", rc);
         return rc;
     }
+
+    CURL *curl;
+
+    curl = curl_easy_init();
+
+    if (!curl) {
+        return VEIDES_RC_FAILURE;
+    }
+
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
+    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L);
+    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 1L);
 
     char *baseUrl = client->properties->configurationProperties->baseUrl;
 
@@ -167,22 +165,22 @@ VEIDES_RC veides_api_client_sendRequest(void *veidesClient, const char *uri, con
 
     snprintf(url, len, format, baseUrl, client->version, uri, queryParams);
 
-    curl_easy_setopt(client->curl, CURLOPT_URL, url);
-    curl_easy_setopt(client->curl, CURLOPT_CUSTOMREQUEST, method);
+    curl_easy_setopt(curl, CURLOPT_URL, url);
+    curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, method);
 
     VeidesApiResponse *response = (VeidesApiResponse *) malloc(sizeof(VeidesApiResponse));
     response->data = "";
 
-    curl_easy_setopt(client->curl, CURLOPT_WRITEDATA, response);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, response);
 
     if (body && *body != '\0') {
         VEIDES_LOG_DEBUG("Setting request body: %s", body);
-        curl_easy_setopt(client->curl, CURLOPT_POSTFIELDS, body);
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, body);
     }
 
-    curl_easy_setopt(client->curl, CURLOPT_HTTPHEADER, baseHeaders);
+    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, baseHeaders);
 
-    CURLcode res = curl_easy_perform(client->curl);
+    CURLcode res = curl_easy_perform(curl);
 
     if(res != CURLE_OK) {
         VEIDES_LOG_ERROR("Error while performing request by CURL (rc=%d)", res);
@@ -190,9 +188,9 @@ VEIDES_RC veides_api_client_sendRequest(void *veidesClient, const char *uri, con
         goto sendRequestEnd;
     }
 
-    curl_easy_getinfo(client->curl, CURLINFO_RESPONSE_CODE, &response->code);
+    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response->code);
 
-    curl_easy_cleanup(client->curl);
+    curl_easy_cleanup(curl);
 
     VEIDES_LOG_DEBUG("Got response (body=%s, code=%d)", response->data, response->code);
 
