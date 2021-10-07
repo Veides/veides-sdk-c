@@ -56,6 +56,10 @@ void onUptimeTrail(VeidesStreamHubClient *client, char *agent, VeidesTrail trail
     log_message(stdout, "INFO: Trail received: (name=%s, value=%s, timestamp=%s)", trail.name, trail.valueString, trail.timestamp);
 }
 
+void onReadyToRockEvent(VeidesStreamHubClient *client, char *agent, VeidesEvent event) {
+    log_message(stdout, "INFO: Event received: (name=%s, message=%s, timestamp=%s)", event.name, event.message, event.timestamp);
+}
+
 int main(int argc, char *argv[]) {
     char *host = NULL;
     char *username = NULL;
@@ -119,6 +123,7 @@ int main(int argc, char *argv[]) {
     }
 
     VeidesStreamHubClient_setTrailHandler(client, clientId, "uptime", onUptimeTrail);
+    VeidesStreamHubClient_setEventHandler(client, clientId, "ready_to_rock", onReadyToRockEvent);
 
     while (!finish) {
         sleep(1);

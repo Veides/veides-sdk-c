@@ -25,7 +25,14 @@ typedef struct {
     int valueBool;
 } VeidesTrail;
 
+typedef struct {
+    char *name;
+    char *message;
+    char *timestamp;
+} VeidesEvent;
+
 typedef void (*VeidesTrailCallbackHandler)(VeidesStreamHubClient *client, char *agent, VeidesTrail trail);
+typedef void (*VeidesEventCallbackHandler)(VeidesStreamHubClient *client, char *agent, VeidesEvent event);
 
 #if defined(__cplusplus)
  }

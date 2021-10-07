@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.3.0] - 2021-10-07
+
+### Added
+
+* Support for events
+
 ## [0.2.1] - 2021-09-21
 
 ### Fixed

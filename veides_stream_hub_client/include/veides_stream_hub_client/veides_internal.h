@@ -37,12 +37,24 @@ typedef struct {
     int count;
 } VeidesTrailHandlers;
 
+typedef struct {
+    char *name;
+    char *agent;
+    void *callback;
+} VeidesEventHandler;
+
+typedef struct {
+    VeidesEventHandler **entries;
+    int count;
+} VeidesEventHandlers;
+
 typedef struct VeidesStreamHubClientInternal {
     VeidesStreamHubClientProperties *properties;
     char                            *clientId;
     void                            *mqttClient;
     VeidesHandlers                  *handlers;
     VeidesTrailHandlers             *trailHandlers;
+    VeidesEventHandlers             *eventHandlers;
     int                             connected;
 } VeidesStreamHubClientInternal;
 
@@ -57,6 +69,8 @@ VEIDES_RC veides_sh_client_retry_connection(void *client);
 VEIDES_RC veides_sh_client_setHandler(void *client, char * topic, VeidesCallbackHandler handler);
 VEIDES_RC veides_sh_client_setTrailHandler(void *client, const char *agent, const char *name, VeidesTrailCallbackHandler callback);
 VeidesTrailHandler* veides_sh_client_getTrailHandler(VeidesTrailHandlers *handlers, char *agent, char *name);
+VEIDES_RC veides_sh_client_setEventHandler(void *client, const char *agent, const char *name, VeidesEventCallbackHandler callback);
+VeidesEventHandler* veides_sh_client_getEventHandler(VeidesEventHandlers *handlers, char *agent, char *name);
 VEIDES_RC veides_sh_client_subscribe(void *client, char *topic, int qos);
 VEIDES_RC veides_sh_client_publish(void *client, char *topic, char *payload, int qos);
 VEIDES_RC veides_sh_client_topic_match(const char *sub, const char *topic);

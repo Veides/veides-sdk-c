@@ -62,6 +62,23 @@ static VEIDES_RC veides_add_trailHandler(VeidesTrailHandlers *handlers, VeidesTr
     return rc;
 }
 
+static VEIDES_RC veides_add_eventHandler(VeidesEventHandlers *handlers, VeidesEventHandler *handler) {
+    VEIDES_RC rc = VEIDES_RC_SUCCESS;
+
+    VeidesEventHandler **tmp = NULL;
+
+    tmp = realloc(handlers->entries, sizeof(VeidesEventHandler*) * (handlers->count + 1));
+    if (tmp == NULL) {
+        return VEIDES_RC_NOMEM;
+    }
+
+    handlers->entries = tmp;
+    handlers->entries[handlers->count] = handler;
+    handlers->count++;
+
+    return rc;
+}
+
 static VeidesHandler* veides_sh_client_getHandler(VeidesHandlers *handlers, char *topic) {
     int i = 0;
     VeidesHandler *handler = NULL;
@@ -85,6 +102,35 @@ VeidesTrailHandler* veides_sh_client_getTrailHandler(VeidesTrailHandlers *handle
 
     if (!handlers) {
         VEIDES_LOG_ERROR("Invalid handle for trail handlers provided (handlers=%s)", handlers ? "valid" : "NULL");
+        return NULL;
+    }
+
+    if (!name || *name == '\0') {
+        VEIDES_LOG_ERROR("Invalid arguments provided (name=%s)", name ? "Valid" : "NULL");
+        return NULL;
+    }
+
+    int i = 0;
+    int found = 0;
+    for (i = 0; i < handlers->count; i++) {
+        handler = handlers->entries[i];
+        if (handler->name && handler->agent && strcmp(name, handler->name) == 0 && strcmp(agent, handler->agent) == 0) {
+            found = 1;
+            break;
+        }
+    }
+    if (found == 0) {
+        handler = NULL;
+    }
+
+    return handler;
+}
+
+VeidesEventHandler* veides_sh_client_getEventHandler(VeidesEventHandlers *handlers, char *agent, char *name) {
+    VeidesEventHandler *handler = NULL;
+
+    if (!handlers) {
+        VEIDES_LOG_ERROR("Invalid handle for event handlers provided (handlers=%s)", handlers ? "valid" : "NULL");
         return NULL;
     }
 
@@ -240,6 +286,9 @@ VEIDES_RC veides_sh_client_create(void **veidesClient, VeidesStreamHubClientProp
     client->trailHandlers = (VeidesTrailHandlers *) malloc(sizeof(VeidesTrailHandlers));
     client->trailHandlers->count = 0;
     client->trailHandlers->entries = (VeidesTrailHandler **) malloc(sizeof(VeidesTrailHandler*));
+    client->eventHandlers = (VeidesEventHandlers *) malloc(sizeof(VeidesEventHandlers));
+    client->eventHandlers->count = 0;
+    client->eventHandlers->entries = (VeidesEventHandler **) malloc(sizeof(VeidesEventHandler*));
 
     int clientIdLen = strlen(properties->authProperties->username) + 11;
     client->clientId = malloc(clientIdLen);
@@ -642,6 +691,46 @@ VEIDES_RC veides_sh_client_setTrailHandler(void *veidesClient, const char *agent
         VeidesTrailHandler *handler = client->trailHandlers->entries[i];
         handler->callback = callback;
         VEIDES_LOG_INFO("Updated handler for trail %s", name);
+    }
+
+    return rc;
+}
+
+VEIDES_RC veides_sh_client_setEventHandler(void *veidesClient, const char *agent, const char *name, VeidesEventCallbackHandler callback) {
+    VEIDES_RC rc = VEIDES_RC_SUCCESS;
+    VeidesStreamHubClientInternal *client = (VeidesStreamHubClientInternal *) veidesClient;
+
+    if (!client) {
+        rc = VEIDES_RC_INVALID_HANDLE;
+        VEIDES_LOG_ERROR("Invalid Stream Hub client handle provided (rc=%d)", rc);
+        return rc;
+    }
+
+    int found = 0;
+    int i = 0;
+    for (i = 0; i < client->eventHandlers->count; i++) {
+        VeidesEventHandler *handler = client->eventHandlers->entries[i];
+        if (handler->name && strcmp(name, handler->name) == 0) {
+            found = 1;
+            break;
+        }
+    }
+    if (found == 0) {
+        VeidesEventHandler *handler = (VeidesEventHandler *) malloc(sizeof(VeidesEventHandler));
+        handler->name = strdup(name);
+        handler->agent = strdup(agent);
+        handler->callback = callback;
+
+        rc = veides_add_eventHandler(client->eventHandlers, handler);
+        if (rc == VEIDES_RC_SUCCESS) {
+            VEIDES_LOG_INFO("Added handler for event %s", name);
+        } else {
+            VEIDES_LOG_WARNING("Failed to set handler for event %s (rc=%d)", name, rc);
+        }
+    } else {
+        VeidesEventHandler *handler = client->eventHandlers->entries[i];
+        handler->callback = callback;
+        VEIDES_LOG_INFO("Updated handler for event %s", name);
     }
 
     return rc;

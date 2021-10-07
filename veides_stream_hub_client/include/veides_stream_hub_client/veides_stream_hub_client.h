@@ -61,6 +61,16 @@ LIBRARY_API VEIDES_RC VeidesStreamHubClient_isConnected(VeidesStreamHubClient *c
  */
 LIBRARY_API VEIDES_RC VeidesStreamHubClient_setTrailHandler(VeidesStreamHubClient *client, const char *agent, const char *name, VeidesTrailCallbackHandler callback);
 
+/**
+ * @brief Set a callback for the event sent by particular agent
+ *
+ * @param client
+ * @param agent
+ * @param name
+ * @param callback
+ */
+LIBRARY_API VEIDES_RC VeidesStreamHubClient_setEventHandler(VeidesStreamHubClient *client, const char *agent, const char *name, VeidesEventCallbackHandler callback);
+
 #if defined(__cplusplus)
  }
 #endif

@@ -6,6 +6,7 @@
 #include "veides_utils_shared/veides_logger_p.h"
 
 static void veides_sh_client_trailMessageReceived(VeidesStreamHubClient *client, char *topic, size_t topiclen, void* payload, size_t payloadlen);
+static void veides_sh_client_eventMessageReceived(VeidesStreamHubClient *client, char *topic, size_t topiclen, void* payload, size_t payloadlen);
 
 static char* veides_sh_client_buildTopicWithName(const char *clientId, const char *type, const char *name) {
     char *format = "agent/%s/%s/%s";
@@ -105,6 +106,45 @@ VEIDES_RC VeidesStreamHubClient_setTrailHandler(VeidesStreamHubClient *client, c
     return rc;
 }
 
+VEIDES_RC VeidesStreamHubClient_setEventHandler(VeidesStreamHubClient *client, const char *agent, const char *name, VeidesEventCallbackHandler callback) {
+    VEIDES_RC rc = VEIDES_RC_SUCCESS;
+
+    if (!client) {
+        rc = VEIDES_RC_INVALID_HANDLE;
+        VEIDES_LOG_WARNING("Invalid Stream Hub client handle provided (rc=%d)", rc);
+        return rc;
+    }
+
+    if (!callback || !agent || *agent == '\0' || !name || *name == '\0') {
+        rc = VEIDES_RC_NULL_PARAM;
+        VEIDES_LOG_WARNING("Invalid name or callback provided (rc=%d)", rc);
+        return rc;
+    }
+
+    rc = veides_sh_client_setEventHandler((void *) client, agent, name, callback);
+    if (rc == VEIDES_RC_SUCCESS) {
+        VeidesStreamHubClient *veidesClient = (VeidesStreamHubClient *) client;
+
+        char *topic = veides_sh_client_buildTopicWithName(agent, "event", name);
+
+        VEIDES_LOG_DEBUG("Subscribe to topic %s", topic);
+
+        rc = veides_sh_client_subscribe((void *) client, topic, 1);
+        if (rc != VEIDES_RC_SUCCESS) {
+            VEIDES_LOG_ERROR("Failed to subscribe to topic %s (rc=%d)", topic, rc);
+        }
+
+        rc = veides_sh_client_setHandler((void *) client, topic, (void *) veides_sh_client_eventMessageReceived);
+        if (rc != VEIDES_RC_SUCCESS) {
+            VEIDES_LOG_ERROR("Failed to set internal message handler (rc=%d)", rc);
+        }
+    } else {
+        VEIDES_LOG_ERROR("Failed to set event handler (rc=%d)", rc);
+    }
+
+    return rc;
+}
+
 static void veides_sh_client_trailMessageReceived(VeidesStreamHubClient *client, char *topic, size_t topiclen, void* payload, size_t payloadlen) {
     char *pl = NULL;
 
@@ -167,6 +207,57 @@ static void veides_sh_client_trailMessageReceived(VeidesStreamHubClient *client,
     }
 
 endTrailReceived:
+    if (pl) {
+        free(pl);
+    }
+}
+
+static void veides_sh_client_eventMessageReceived(VeidesStreamHubClient *client, char *topic, size_t topiclen, void* payload, size_t payloadlen) {
+    char *pl = NULL;
+
+    pl = (char *) malloc(payloadlen+1);
+
+    memset(pl, 0, payloadlen+1);
+    strncpy(pl, payload, payloadlen);
+
+    cJSON *json = cJSON_ParseWithLength(pl, payloadlen+1);
+
+    if (json == NULL) {
+        goto endEventReceived;
+    }
+
+    VeidesEvent event = {NULL, NULL, NULL};
+
+    cJSON *timestamp = cJSON_GetObjectItemCaseSensitive(json, "timestamp");
+    cJSON *message = cJSON_GetObjectItemCaseSensitive(json, "message");
+
+    char *name = strrchr(topic, '/');
+    memmove(name, name, strlen(name));
+
+    char *agent = strchr(topic, '/');
+    memmove(agent, agent+1, strlen(agent));
+
+    char *p = strchr(agent, '/');
+    *p = '\0';
+
+    VEIDES_LOG_DEBUG("Event received (agent=%s, name=%s, payload=%s)", agent, name, pl);
+
+    event.name = strdup(name);
+    event.timestamp = strdup(timestamp->valuestring);
+    event.message = strdup(message->valuestring);
+
+    VeidesStreamHubClientInternal *veidesClient = (VeidesStreamHubClientInternal *) client;
+
+    VeidesEventHandler *handler = veides_sh_client_getEventHandler(veidesClient->eventHandlers, agent, name);
+
+    if (handler != NULL) {
+        VeidesEventCallbackHandler callback = (VeidesEventCallbackHandler) handler->callback;
+        if (callback != NULL) {
+            (*callback)(client, agent, event);
+        }
+    }
+
+endEventReceived:
     if (pl) {
         free(pl);
     }
